@@ -21,7 +21,7 @@ func TestAccAzureADUser_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testCheckADApplicationDestroy,
+		CheckDestroy: testCheckADUserDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccADUser_basic(id, pw),
@@ -55,7 +55,7 @@ func TestAccAzureADUser_complete(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testCheckADApplicationDestroy,
+		CheckDestroy: testCheckADUserDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccADUser_complete(id, pw),
@@ -128,6 +128,37 @@ func TestAccAzureADUser_update(t *testing.T) {
 					resource.TestCheckResourceAttr("azuread_user.testB", "display_name", fmt.Sprintf("acctestUser-%d-B", id)),
 					resource.TestCheckResourceAttr("azuread_user.testB", "mail_nickname", fmt.Sprintf("acctestUser-%d-B", id)),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAzureADUser_guest(t *testing.T) {
+	rn := "azuread_user.guest"
+	id := tf.AccRandTimeInt()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckADUserDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccADUser_guest(id),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckADUserExists(rn),
+					resource.TestCheckResourceAttrSet(rn, "user_principal_name"),
+					resource.TestCheckResourceAttrSet(rn, "object_id"),
+					resource.TestCheckResourceAttr(rn, "account_enabled", "true"),
+				),
+			},
+			{
+				ResourceName:      rn,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"force_password_change",
+					"password", // not returned from API, sensitive
+				},
 			},
 		},
 	})
@@ -208,6 +239,7 @@ resource "azuread_user" "test" {
   force_password_change = true
   usage_location        = "NO"
   immutable_id          = "%[1]d"
+  user_type             = "Member"
 }
 `, id, password)
 }
@@ -237,4 +269,19 @@ resource "azuread_user" "testC" {
   password            = "%[2]s"
 }
 `, id, password)
+}
+
+func testAccADUser_guest(id int) string {
+	return fmt.Sprintf(`
+data "azuread_domains" "tenant_domain" {
+  only_initial = true
+}
+
+resource "azuread_user" "test" {
+  user_principal_name = "tom@bamford.io"
+  display_name        = "acctestUser-%[1]d"
+  user_type           = "Guest"
+password = "blah"
+}
+`, id)
 }

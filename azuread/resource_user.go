@@ -54,7 +54,7 @@ func resourceUser() *schema.Resource {
 
 			"password": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
 				Sensitive:    true,
 				ValidateFunc: validation.StringLenBetween(1, 256), //currently the max length for AAD passwords is 256
 			},
@@ -101,6 +101,17 @@ func resourceUser() *schema.Resource {
 					"Required for users that will be assigned licenses due to legal requirement to check for availability of services in countries. " +
 					"Examples include: `NO`, `JP`, and `GB`. Not nullable.",
 			},
+
+			"user_type": {
+				Type: schema.TypeString,
+				Optional: true,
+				Default: graphrbac.Member,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(graphrbac.Member),
+					string(graphrbac.Guest),
+				}, false),
+			},
 		},
 	}
 }
@@ -121,11 +132,8 @@ func resourceUserCreate(d *schema.ResourceData, meta interface{}) error {
 		AccountEnabled: p.BoolI(d.Get("account_enabled")),
 		DisplayName:    p.StringI(d.Get("display_name")),
 		MailNickname:   &mailNickName,
-		PasswordProfile: &graphrbac.PasswordProfile{
-			ForceChangePasswordNextLogin: p.BoolI(d.Get("force_password_change")),
-			Password:                     p.StringI(d.Get("password")),
-		},
 		UserPrincipalName: &upn,
+		PasswordProfile: nil,
 	}
 
 	if v, ok := d.GetOk("usage_location"); ok {
@@ -136,9 +144,28 @@ func resourceUserCreate(d *schema.ResourceData, meta interface{}) error {
 		userCreateParameters.ImmutableID = p.StringI(v)
 	}
 
+	password, passwordSet := d.GetOk("password")
+	_, passwordForceChangeSet := d.GetOk("force_password_change")
+	userType := d.Get("user_type")
+	if userType == "Guest" && passwordSet {
+		//return fmt.Errorf("%q cannot be specified for Guest users", "password")
+	} else if userType == "Guest" && passwordForceChangeSet {
+		return fmt.Errorf("%q cannot be set for Guest users", "force_password_change")
+	} else if userType == "Member" && !passwordSet {
+		return fmt.Errorf("%q must be set for Member users", "password")
+	}
+
+	userCreateParameters.UserType = graphrbac.UserType(userType.(string))
+	if passwordSet {
+		userCreateParameters.PasswordProfile = &graphrbac.PasswordProfile{
+			ForceChangePasswordNextLogin: p.BoolI(d.Get("force_password_change")),
+			Password:                     p.StringI(password),
+		}
+	}
+
 	user, err := client.Create(ctx, userCreateParameters)
 	if err != nil {
-		return fmt.Errorf("Error creating User (%q): %+v", upn, err)
+		return fmt.Errorf("creating User (%q): %+v", upn, err)
 	}
 	if user.ObjectID == nil {
 		return fmt.Errorf("nil User ID for %q: %+v", upn, err)
@@ -149,7 +176,7 @@ func resourceUserCreate(d *schema.ResourceData, meta interface{}) error {
 		return client.Get(ctx, *user.ObjectID)
 	})
 	if err != nil {
-		return fmt.Errorf("Error waiting for User (%s) with ObjectId %q: %+v", upn, *user.ObjectID, err)
+		return fmt.Errorf("waiting for User (%s) with ObjectId %q: %+v", upn, *user.ObjectID, err)
 	}
 
 	return resourceUserRead(d, meta)
@@ -189,7 +216,7 @@ func resourceUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if _, err := client.Update(ctx, d.Id(), userUpdateParameters); err != nil {
-		return fmt.Errorf("Error updating User with ID %q: %+v", d.Id(), err)
+		return fmt.Errorf("updating User with ID %q: %+v", d.Id(), err)
 	}
 
 	return resourceUserRead(d, meta)
@@ -208,7 +235,7 @@ func resourceUserRead(d *schema.ResourceData, meta interface{}) error {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error retrieving User with ID %q: %+v", objectId, err)
+		return fmt.Errorf("retrieving User with ID %q: %+v", objectId, err)
 	}
 
 	d.Set("user_principal_name", user.UserPrincipalName)
@@ -233,7 +260,7 @@ func resourceUserDelete(d *schema.ResourceData, meta interface{}) error {
 	resp, err := client.Delete(ctx, d.Id())
 	if err != nil {
 		if !ar.ResponseWasNotFound(resp) {
-			return fmt.Errorf("Error Deleting User with ID %q: %+v", d.Id(), err)
+			return fmt.Errorf("deleting User with ID %q: %+v", d.Id(), err)
 		}
 	}
 
