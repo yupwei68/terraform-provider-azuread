@@ -27,7 +27,7 @@ func dataUsers() *schema.Resource {
 				Type:         schema.TypeList,
 				Optional:     true,
 				Computed:     true,
-				ExactlyOneOf: []string{"object_ids", "user_principal_names", "mail_nicknames"},
+				ExactlyOneOf: []string{"object_ids", "user_principal_names", "mails", "mail_nicknames"},
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validate.UUID,
@@ -38,7 +38,18 @@ func dataUsers() *schema.Resource {
 				Type:         schema.TypeList,
 				Optional:     true,
 				Computed:     true,
-				ExactlyOneOf: []string{"object_ids", "user_principal_names", "mail_nicknames"},
+				ExactlyOneOf: []string{"object_ids", "user_principal_names", "mails", "mail_nicknames"},
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validate.NoEmptyStrings,
+				},
+			},
+
+			"mails": {
+				Type:         schema.TypeList,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"object_ids", "user_principal_names", "mails", "mail_nicknames"},
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validate.NoEmptyStrings,
@@ -49,7 +60,7 @@ func dataUsers() *schema.Resource {
 				Type:         schema.TypeList,
 				Optional:     true,
 				Computed:     true,
-				ExactlyOneOf: []string{"object_ids", "user_principal_names", "mail_nicknames"},
+				ExactlyOneOf: []string{"object_ids", "user_principal_names", "mails", "mail_nicknames"},
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validate.NoEmptyStrings,
@@ -160,6 +171,22 @@ func dataSourceUsersRead(d *schema.ResourceData, meta interface{}) error {
 				}
 				users = append(users, u)
 			}
+		} else if mails, ok := d.Get("mails").([]interface{}); ok && len(mails) > 0 {
+			expectedCount = len(mails)
+			for _, v := range mails {
+				u, err := graph.UserGetByMail(&client, ctx, v.(string))
+				if err != nil {
+					return fmt.Errorf("finding Azure AD User with mail address %q: %+v", v.(string), err)
+				}
+				if u == nil {
+					if ignoreMissing {
+						break
+					} else {
+						return fmt.Errorf("found no AD Users with mail address %q", v.(string))
+					}
+				}
+				users = append(users, u)
+			}
 		} else if mailNicknames, ok := d.Get("mail_nicknames").([]interface{}); ok && len(mailNicknames) > 0 {
 			expectedCount = len(mailNicknames)
 			for _, v := range mailNicknames {
@@ -190,6 +217,7 @@ func dataSourceUsersRead(d *schema.ResourceData, meta interface{}) error {
 
 	upns := make([]string, 0, len(users))
 	oids := make([]string, 0, len(users))
+	mails := make([]string, 0, len(users))
 	mailNicknames := make([]string, 0, len(users))
 	userList := make([]map[string]interface{}, 0, len(users))
 	for _, u := range users {
@@ -223,6 +251,7 @@ func dataSourceUsersRead(d *schema.ResourceData, meta interface{}) error {
 	d.SetId("users#" + base64.URLEncoding.EncodeToString(h.Sum(nil)))
 	d.Set("object_ids", oids)
 	d.Set("user_principal_names", upns)
+	d.Set("mails", mails)
 	d.Set("mail_nicknames", mailNicknames)
 	d.Set("users", userList)
 

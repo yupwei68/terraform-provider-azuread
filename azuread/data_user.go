@@ -20,27 +20,35 @@ func dataUser() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"object_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  validate.UUID,
-				ConflictsWith: []string{"user_principal_name"},
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validate.UUID,
+				ExactlyOneOf: []string{"mail", "mail_nickname", "object_id", "user_principal_name"},
 			},
 
 			"user_principal_name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  validate.NoEmptyStrings,
-				ConflictsWith: []string{"object_id"},
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validate.NoEmptyStrings,
+				ExactlyOneOf: []string{"mail", "mail_nickname", "object_id", "user_principal_name"},
+			},
+
+			"mail": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validate.NoEmptyStrings,
+				ExactlyOneOf: []string{"mail", "mail_nickname", "object_id", "user_principal_name"},
 			},
 
 			"mail_nickname": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  validate.NoEmptyStrings,
-				ConflictsWith: []string{"object_id", "user_principal_name"},
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validate.NoEmptyStrings,
+				ExactlyOneOf: []string{"mail", "mail_nickname", "object_id", "user_principal_name"},
 			},
 
 			"account_enabled": {
@@ -54,11 +62,6 @@ func dataUser() *schema.Resource {
 			},
 
 			"immutable_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"mail": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -112,6 +115,15 @@ func dataSourceUserRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		if u == nil {
 			return fmt.Errorf("Azure AD User not found with email alias: %q", mailNickname)
+		}
+		user = *u
+	} else if mail, ok := d.Get("mail").(string); ok && mail != "" {
+		u, err := graph.UserGetByMail(&client, ctx, mail)
+		if err != nil {
+			return fmt.Errorf("finding Azure AD User with mail address %q: %+v", mailNickname, err)
+		}
+		if u == nil {
+			return fmt.Errorf("Azure AD User not found with mail address: %q", mailNickname)
 		}
 		user = *u
 	} else {

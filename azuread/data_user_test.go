@@ -83,6 +83,44 @@ func TestAccAzureADUserDataSource_byObjectIdNonexistent(t *testing.T) {
 	})
 }
 
+func TestAccAzureADUserDataSource_byMail(t *testing.T) {
+	dsn := "data.azuread_user.test"
+	id := tf.AccRandTimeInt()
+	password := "p@$$wR2" + acctest.RandStringFromCharSet(7, acctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAzureADUserDataSource_byMail(id, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(dsn, "user_principal_name"),
+					resource.TestCheckResourceAttrSet(dsn, "account_enabled"),
+					resource.TestCheckResourceAttrSet(dsn, "display_name"),
+					resource.TestCheckResourceAttrSet(dsn, "mail"),
+					resource.TestCheckResourceAttrSet(dsn, "mail_nickname"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAzureADUserDataSource_byMailNonexistent(t *testing.T) {
+	ri := tf.AccRandTimeInt()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccAzureADUserDataSource_byMailNonexistent(ri),
+				ExpectError: regexp.MustCompile("Azure AD User not found with email alias:"),
+			},
+		},
+	})
+}
+
 func TestAccAzureADUserDataSource_byMailNickname(t *testing.T) {
 	dsn := "data.azuread_user.test"
 	id := tf.AccRandTimeInt()
@@ -158,6 +196,28 @@ data "azuread_user" "test" {
   object_id = "00000000-0000-0000-0000-000000000000"
 }
 `
+}
+
+func testAccAzureADUserDataSource_byMail(id int, password string) string {
+	return fmt.Sprintf(`
+%s
+
+data "azuread_user" "test" {
+  mail = azuread_user.test.mail
+}
+`, testAccADUser_basic(id, password))
+}
+
+func testAccAzureADUserDataSource_byMailNonexistent(ri int) string {
+	return fmt.Sprintf(`
+data "azuread_domains" "tenant_domain" {
+  only_initial = true
+}
+
+data "azuread_user" "test" {
+  mail = "not-a-real-user-%d${data.azuread_domains.tenant_domain.domains.0.domain_name}"
+}
+`, ri)
 }
 
 func testAccAzureADUserDataSource_byMailNickname(id int, password string) string {

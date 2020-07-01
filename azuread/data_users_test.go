@@ -95,6 +95,51 @@ func TestAccAzureADUsersDataSource_byObjectIdsIgnoreMissing(t *testing.T) {
 	})
 }
 
+func TestAccAzureADUsersDataSource_byMails(t *testing.T) {
+	dsn := "data.azuread_users.test"
+	id := tf.AccRandTimeInt()
+	password := "p@$$wR2" + acctest.RandStringFromCharSet(7, acctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAzureADUsersDataSource_byMails(id, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dsn, "user_principal_names.#", "2"),
+					resource.TestCheckResourceAttr(dsn, "object_ids.#", "2"),
+					resource.TestCheckResourceAttr(dsn, "mails.#", "2"),
+					resource.TestCheckResourceAttr(dsn, "users.#", "2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAzureADUsersDataSource_byMailsIgnoreMissing(t *testing.T) {
+	dsn := "data.azuread_users.test"
+	id := tf.AccRandTimeInt()
+	password := "p@$$wR2" + acctest.RandStringFromCharSet(7, acctest.CharSetAlphaNum)
+	ri := tf.AccRandTimeInt()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAzureADUsersDataSource_byMailsIgnoreMissing(id, password, ri),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dsn, "user_principal_names.#", "2"),
+					resource.TestCheckResourceAttr(dsn, "object_ids.#", "2"),
+					resource.TestCheckResourceAttr(dsn, "mails.#", "2"),
+					resource.TestCheckResourceAttr(dsn, "users.#", "2"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAzureADUsersDataSource_byMailNicknames(t *testing.T) {
 	dsn := "data.azuread_users.test"
 	id := tf.AccRandTimeInt()
@@ -210,6 +255,32 @@ data "azuread_users" "test" {
   ]
 }
 `, testAccADUser_threeUsersABC(id, password))
+}
+
+func testAccAzureADUsersDataSource_byMails(id int, password string) string {
+	return fmt.Sprintf(`
+%s
+
+data "azuread_users" "test" {
+  mails = [azuread_user.testA.mail, azuread_user.testB.mail]
+}
+`, testAccADUser_threeUsersABC(id, password))
+}
+
+func testAccAzureADUsersDataSource_byMailsIgnoreMissing(id int, password string, ri int) string {
+	return fmt.Sprintf(`
+%s
+
+data "azuread_users" "test" {
+  ignore_missing = true
+
+  mail_nicknames = [
+    azuread_user.testA.mail,
+    azuread_user.testB.mail,
+    "not-a-real-user-%d${data.azuread_domains.tenant_domain.domains.0.domain_name}"
+  ]
+}
+`, testAccADUser_threeUsersABC(id, password), ri)
 }
 
 func testAccAzureADUsersDataSource_byMailNicknames(id int, password string) string {
