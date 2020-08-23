@@ -1,9 +1,9 @@
 package tf
 
 func ExpandStringSlicePtr(input []interface{}) *[]string {
-	result := make([]string, 0)
-	for _, item := range input {
-		result = append(result, item.(string))
+	result := make([]string, len(input))
+	for i, item := range input {
+		result[i] = item.(string)
 	}
 	return &result
 }

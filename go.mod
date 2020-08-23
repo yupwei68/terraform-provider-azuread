@@ -8,6 +8,9 @@ require (
 	github.com/hashicorp/go-azure-helpers v0.12.0
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/terraform-plugin-sdk v1.6.0
+	github.com/manicminer/hamilton v0.0.0-20200823014637-740df42050c6
 )
 
 go 1.13
+
+replace github.com/manicminer/hamilton => /Users/tom/go/src/github.com/manicminer/hamilton

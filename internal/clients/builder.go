@@ -59,14 +59,13 @@ func (b *ClientBuilder) Build(ctx context.Context) (*AadClient, error) {
 		Environment:      *env,
 	}
 
-	// Graph Endpoints
-	graphEndpoint := env.GraphEndpoint // todo this should become AadGraphEndpoint?
-	graphAuthorizer, err := b.AuthConfig.GetAuthorizationToken(sender, oauth, graphEndpoint)
+	// AAD Graph
+	aadGraphEndpoint := env.GraphEndpoint
+	aadGraphAuthorizer, err := b.AuthConfig.GetAuthorizationToken(sender, oauth, aadGraphEndpoint)
 	if err != nil {
 		return nil, err
 	}
-
-	client.AadGraph = aad.BuildClient(o, graphEndpoint, graphAuthorizer)
+	client.AadGraph = aad.BuildClient(o, aadGraphEndpoint, aadGraphAuthorizer)
 
 	autorest.Count429AsRetry = false
 

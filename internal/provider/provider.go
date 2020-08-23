@@ -8,9 +8,13 @@ import (
 	"github.com/hashicorp/go-azure-helpers/authentication"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/manicminer/hamilton/auth"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
 	"github.com/terraform-providers/terraform-provider-azuread/internal/services/aadgraph"
+	"github.com/terraform-providers/terraform-provider-azuread/internal/services/msgraph"
+
+	msgraphclient "github.com/terraform-providers/terraform-provider-azuread/internal/services/msgraph/client"
 )
 
 type ServiceRegistration interface {
@@ -46,6 +50,7 @@ func AzureADProvider() terraform.ResourceProvider {
 	// looks like only an env var will work?
 	services := []ServiceRegistration{
 		aadgraph.Registration{},
+		msgraph.Registration{},
 	}
 
 	dataSources := make(map[string]*schema.Resource)
@@ -142,11 +147,15 @@ func AzureADProvider() terraform.ResourceProvider {
 
 func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 	return func(d *schema.ResourceData) (interface{}, error) {
+		clientId := d.Get("client_id").(string)
+		clientSecret := d.Get("client_secret").(string)
+		tenantId := d.Get("tenant_id").(string)
+
 		builder := &authentication.Builder{
-			ClientID:           d.Get("client_id").(string),
-			ClientSecret:       d.Get("client_secret").(string),
-			TenantID:           d.Get("tenant_id").(string),
-			SubscriptionID:     d.Get("tenant_id").(string), // TODO: delete in v1.1
+			ClientID:           clientId,
+			ClientSecret:       clientSecret,
+			TenantID:           tenantId,
+			SubscriptionID:     tenantId, // TODO: delete in v1.1
 			MetadataURL:        d.Get("metadata_host").(string),
 			Environment:        d.Get("environment").(string),
 			MsiEndpoint:        d.Get("msi_endpoint").(string),
@@ -166,22 +175,19 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 			return nil, fmt.Errorf("building AzureAD Client: %s", err)
 		}
 
-		terraformVersion := p.TerraformVersion
-		if terraformVersion == "" {
-			// Terraform 0.12 introduced this field to the protocol
-			// We can therefore assume that if it's missing it's 0.10 or 0.11
-			terraformVersion = "0.11+compatible"
-		}
-
 		clientBuilder := clients.ClientBuilder{
 			AuthConfig:       config,
-			TerraformVersion: terraformVersion,
+			TerraformVersion: p.TerraformVersion,
 		}
 
 		client, err := clientBuilder.Build(p.StopContext())
 		if err != nil {
 			return nil, err
 		}
+
+		// MS Graph
+		msGraphAuthorizer := auth.NewClientSecretAuthorizer(p.StopContext(), clientId, clientSecret, tenantId)
+		client.MsGraph = msgraphclient.BuildClient(msGraphAuthorizer, tenantId)
 
 		// replaces the context between tests
 		p.MetaReset = func() error { //nolint unparam

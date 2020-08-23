@@ -207,6 +207,12 @@ github.com/hashicorp/terraform-svchost/disco
 github.com/hashicorp/yamux
 # github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 github.com/jmespath/go-jmespath
+# github.com/manicminer/hamilton v0.0.0-20200823014637-740df42050c6 => /Users/tom/go/src/github.com/manicminer/hamilton
+## explicit
+github.com/manicminer/hamilton/auth
+github.com/manicminer/hamilton/base
+github.com/manicminer/hamilton/clients
+github.com/manicminer/hamilton/models
 # github.com/mattn/go-colorable v0.1.1
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.5
@@ -302,12 +308,14 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+# golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 golang.org/x/oauth2
+golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
+golang.org/x/oauth2/microsoft
 # golang.org/x/sys v0.0.0-20190804053845-51ab0e2deafa
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
@@ -384,3 +392,4 @@ google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
 google.golang.org/grpc/test/bufconn
+# github.com/manicminer/hamilton => /Users/tom/go/src/github.com/manicminer/hamilton
