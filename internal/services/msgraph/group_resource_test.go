@@ -243,11 +243,11 @@ func TestAccGroup_preventDuplicateNames(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:  func() { acceptance.PreCheck(t) },
 		Providers: acceptance.SupportedProviders,
-		//CheckDestroy: testCheckApplicationDestroy,
+		CheckDestroy: testCheckGroupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccGroup_duplicateName(ri),
-				ExpectError: regexp.MustCompile("existing Group .+ was found"),
+				ExpectError: regexp.MustCompile("[0-9]+ existing groups? (was|were) found with display_name"),
 			},
 		},
 	})
@@ -469,7 +469,7 @@ func testAccGroup_duplicateName(id int) string {
 %s
 
 resource "azuread_group_msgraph" "duplicate" {
-  display_name            = azuread_group_msgraph.test.name
+  display_name            = azuread_group_msgraph.test.display_name
   prevent_duplicate_names = true
 }
 `, testAccGroup_basic(id))

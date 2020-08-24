@@ -1,7 +1,10 @@
 package msgraph
 
 import (
+	"context"
 	"fmt"
+	clients2 "github.com/manicminer/hamilton/clients"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -97,7 +100,13 @@ func groupResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.AadClient).MsGraph.GroupsClient
 	ctx := meta.(*clients.AadClient).StopContext
 
-	name := d.Get("display_name").(string)
+	displayName := d.Get("display_name").(string)
+
+	if preventDuplicates := d.Get("prevent_duplicate_names").(bool); preventDuplicates {
+		if err := groupCheckExistingDisplayName(ctx, client, displayName, nil); err != nil {
+			return err
+		}
+	}
 
 	// default value matches portal behaviour
 	mailNickname := uuid.New().String()
@@ -106,7 +115,7 @@ func groupResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	properties := models.Group{
-		DisplayName:     utils.String(name),
+		DisplayName:     utils.String(displayName),
 		MailEnabled:     utils.Bool(d.Get("mail_enabled").(bool)),
 		MailNickname:    utils.String(mailNickname),
 		SecurityEnabled: utils.Bool(d.Get("security_enabled").(bool)),
@@ -136,7 +145,7 @@ func groupResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if group.ID == nil {
-		return fmt.Errorf("nil Group ID for %q", name)
+		return fmt.Errorf("nil Group ID for %q", displayName)
 	}
 
 	d.SetId(*group.ID)
@@ -153,7 +162,17 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("retrieving Group with ID %q: %+v", d.Id(), err)
 	}
 
-	group.DisplayName = utils.String(d.Get("display_name").(string))
+	displayName := d.Get("display_name").(string)
+
+	if d.HasChange("display_name") {
+		if preventDuplicates := d.Get("prevent_duplicate_names").(bool); preventDuplicates {
+			if err := groupCheckExistingDisplayName(ctx, client, displayName, group.ID); err != nil {
+				return err
+			}
+		}
+	}
+
+	group.DisplayName = utils.String(displayName)
 	group.MailEnabled = utils.Bool(d.Get("mail_enabled").(bool))
 	group.SecurityEnabled = utils.Bool(d.Get("security_enabled").(bool))
 
@@ -272,5 +291,32 @@ func groupResourceDelete(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("deleting Group with ID %q: %+v", d.Id(), err)
 	}
 
+	return nil
+}
+
+func groupCheckExistingDisplayName(ctx context.Context, client *clients2.GroupsClient, displayName string, existingId *string) error {
+	filter := fmt.Sprintf("displayName eq '%s'", displayName)
+	result, err := client.List(ctx, filter)
+	if err != nil {
+		return fmt.Errorf("unable to list existing groups: %+v", err)
+	}
+
+	var existing []models.Group
+	for _, r := range *result {
+		if existingId != nil && *r.ID == *existingId {
+			continue
+		}
+		if strings.EqualFold(displayName, *r.DisplayName) {
+			existing = append(existing, r)
+		}
+	}
+	count := len(existing)
+	if count > 0 {
+		noun := "group was"
+		if count > 1 {
+			noun = "groups were"
+		}
+		return fmt.Errorf("`prevent_duplicate_names` was specified and %d existing %s found with display_name %q", count, noun, displayName)
+	}
 	return nil
 }

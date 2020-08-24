@@ -8,6 +8,7 @@ import (
 	"github.com/manicminer/hamilton/base"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"github.com/manicminer/hamilton/models"
 )
@@ -22,10 +23,14 @@ func NewGroupsClient(authorizer auth.Authorizer, tenantId string) *GroupsClient 
 	}
 }
 
-func (c *GroupsClient) List(ctx context.Context) (*[]models.Group, error) {
+func (c *GroupsClient) List(ctx context.Context, filter string) (*[]models.Group, error) {
+	params := url.Values{}
+	if filter != "" {
+		params.Add("$filter", filter)
+	}
 	resp, err := c.BaseClient.Get(ctx, base.GetHttpRequestInput{
 		ValidStatusCodes: []int{http.StatusOK},
-		Uri:              "/groups",
+		Uri:              fmt.Sprintf("/groups?%s", params.Encode()),
 	})
 	if err != nil {
 		return nil, err
