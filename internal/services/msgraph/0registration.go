@@ -22,6 +22,7 @@ func (r Registration) WebsiteCategories() []string {
 func (r Registration) SupportedDataSources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
 		"azuread_group_msgraph": GroupData(),
+		"azuread_groups_msgraph": GroupsData(),
 	}
 }
 

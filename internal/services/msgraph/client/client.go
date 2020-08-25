@@ -7,10 +7,12 @@ import (
 
 type Client struct {
 	GroupsClient *clients.GroupsClient
+	UsersClient *clients.UsersClient
 }
 
 func BuildClient(authorizer auth.Authorizer, tenantId string) *Client {
 	return &Client{
 		GroupsClient: clients.NewGroupsClient(authorizer, tenantId),
+		UsersClient: clients.NewUsersClient(authorizer, tenantId),
 	}
 }

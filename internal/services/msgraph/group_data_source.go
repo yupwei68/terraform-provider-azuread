@@ -73,9 +73,10 @@ func groupDataRead(d *schema.ResourceData, meta interface{}) error {
 			return fmt.Errorf("identifying Group with display name %q: %+v", displayName, err)
 		}
 
-		if len(*groups) > 1 {
+		count := len(*groups)
+		if count > 1 {
 			return fmt.Errorf("more than one group found with display name: %q", displayName)
-		} else if len(*groups) == 0 {
+		} else if count == 0 {
 			return fmt.Errorf("no groups found with display name: %q", displayName)
 		}
 
