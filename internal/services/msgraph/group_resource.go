@@ -43,6 +43,7 @@ func GroupResource() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"members": {
@@ -69,8 +70,7 @@ func GroupResource() *schema.Resource {
 
 			"mail_enabled": {
 				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Computed: true,
 			},
 
 			"mail_nickname": {
@@ -83,8 +83,7 @@ func GroupResource() *schema.Resource {
 
 			"security_enabled": {
 				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
+				Computed: true,
 			},
 
 			"prevent_duplicate_names": {
@@ -115,14 +114,16 @@ func groupResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	properties := models.Group{
-		DisplayName:     utils.String(displayName),
-		MailEnabled:     utils.Bool(d.Get("mail_enabled").(bool)),
-		MailNickname:    utils.String(mailNickname),
-		SecurityEnabled: utils.Bool(d.Get("security_enabled").(bool)),
+		DisplayName:  utils.String(displayName),
+		MailNickname: utils.String(mailNickname),
+
+		// API only supports creation of security groups
+		SecurityEnabled: utils.Bool(true),
+		MailEnabled:     utils.Bool(false),
 	}
 
 	if v, ok := d.GetOk("description"); ok {
-		properties.Description = utils.String(v.(string))
+		properties.Description = utils.StringI(v)
 	}
 
 	if v, ok := d.GetOk("members"); ok {
@@ -141,11 +142,11 @@ func groupResourceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	group, err := client.Create(ctx, properties)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating Group %q: %+v", displayName, err)
 	}
 
 	if group.ID == nil {
-		return fmt.Errorf("nil Group ID for %q", displayName)
+		return fmt.Errorf("null ID returned for Group %q", displayName)
 	}
 
 	d.SetId(*group.ID)
@@ -157,10 +158,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.AadClient).MsGraph.GroupsClient
 	ctx := meta.(*clients.AadClient).StopContext
 
-	group, err := client.Get(ctx, d.Id())
-	if err != nil {
-		return fmt.Errorf("retrieving Group with ID %q: %+v", d.Id(), err)
-	}
+	group := models.Group{ID: utils.String(d.Id())}
 
 	displayName := d.Get("display_name").(string)
 
@@ -170,15 +168,11 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
+		group.DisplayName = utils.String(displayName)
 	}
 
-	group.DisplayName = utils.String(displayName)
-	group.MailEnabled = utils.Bool(d.Get("mail_enabled").(bool))
-	group.SecurityEnabled = utils.Bool(d.Get("security_enabled").(bool))
-
-	group.Description = nil
-	if v, ok := d.GetOk("description"); ok {
-		group.Description = utils.String(v.(string))
+	if d.HasChange("description") {
+		group.Description = utils.StringI(d.Get("description"))
 	}
 
 	if err := client.Update(ctx, group); err != nil {
@@ -208,7 +202,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 				group.AppendMember(client.BaseClient.Endpoint, client.BaseClient.ApiVersion, m)
 			}
 
-			if err := client.AddMembers(ctx, group); err != nil {
+			if err := client.AddMembers(ctx, &group); err != nil {
 				return err
 			}
 		}
@@ -237,7 +231,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 				group.AppendOwner(client.BaseClient.Endpoint, client.BaseClient.ApiVersion, m)
 			}
 
-			if err := client.AddOwners(ctx, group); err != nil {
+			if err := client.AddOwners(ctx, &group); err != nil {
 				return err
 			}
 		}

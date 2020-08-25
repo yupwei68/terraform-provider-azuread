@@ -85,7 +85,7 @@ func (c *GroupsClient) Get(ctx context.Context, id string) (*models.Group, error
 	return &group, nil
 }
 
-func (c *GroupsClient) Update(ctx context.Context, group *models.Group) error {
+func (c *GroupsClient) Update(ctx context.Context, group models.Group) error {
 	body, err := json.Marshal(group)
 	if err != nil {
 		return err
