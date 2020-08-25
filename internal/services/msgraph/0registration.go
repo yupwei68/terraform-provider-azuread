@@ -32,6 +32,7 @@ func (r Registration) SupportedDataSources() map[string]*schema.Resource {
 func (r Registration) SupportedResources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
 		"azuread_group_msgraph": GroupResource(),
+		"azuread_group_member_msgraph": GroupMemberResource(),
 		"azuread_user_msgraph": UserResource(),
 	}
 }
