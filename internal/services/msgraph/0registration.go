@@ -24,6 +24,7 @@ func (r Registration) SupportedDataSources() map[string]*schema.Resource {
 		"azuread_group_msgraph": GroupData(),
 		"azuread_groups_msgraph": GroupsData(),
 		"azuread_user_msgraph": UserData(),
+		"azuread_users_msgraph": UsersData(),
 	}
 }
 
