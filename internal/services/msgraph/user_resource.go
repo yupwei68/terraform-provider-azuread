@@ -68,6 +68,14 @@ func UserResource() *schema.Resource {
 				Computed: true,
 			},
 
+			"onpremises_immutable_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				Description: "This must be specified if you are using a federated domain for the user's userPrincipalName (UPN) property when creating a new user account. " +
+					"It is used to associate an on-premises Active Directory user account with their Azure AD user object.",
+			},
+
 			"onpremises_sam_account_name": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -76,14 +84,6 @@ func UserResource() *schema.Resource {
 			"onpremises_user_principal_name": {
 				Type:     schema.TypeString,
 				Computed: true,
-			},
-
-			"onpremises_immutable_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				Description: "This must be specified if you are using a federated domain for the user's userPrincipalName (UPN) property when creating a new user account. " +
-					"It is used to associate an on-premises Active Directory user account with their Azure AD user object.",
 			},
 
 			"object_id": {
@@ -199,16 +199,16 @@ func userResourceRead(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	d.Set("user_principal_name", user.UserPrincipalName)
+	d.Set("account_enabled", user.AccountEnabled)
 	d.Set("display_name", user.DisplayName)
 	d.Set("mail", user.Mail)
 	d.Set("mail_nickname", user.MailNickname)
-	d.Set("account_enabled", user.AccountEnabled)
 	d.Set("object_id", user.ID)
-	d.Set("usage_location", user.UsageLocation)
 	d.Set("onpremises_immutable_id", user.OnPremisesImmutableId)
 	d.Set("onpremises_sam_account_name", user.OnPremisesSamAccountName)
 	d.Set("onpremises_user_principal_name", user.OnPremisesUserPrincipalName)
+	d.Set("usage_location", user.UsageLocation)
+	d.Set("user_principal_name", user.UserPrincipalName)
 
 	forcePasswordChange := false
 	if user.PasswordProfile != nil {
