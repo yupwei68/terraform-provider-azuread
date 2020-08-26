@@ -2,6 +2,7 @@ package msgraph
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/manicminer/hamilton/models"
@@ -19,10 +20,10 @@ func GroupData() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"object_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  validate.UUID,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validate.UUID,
 				ExactlyOneOf: []string{"display_name", "object_id"},
 			},
 
@@ -32,10 +33,10 @@ func GroupData() *schema.Resource {
 			},
 
 			"display_name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  validate.NoEmptyStrings,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validate.NoEmptyStrings,
 				ExactlyOneOf: []string{"display_name", "object_id"},
 			},
 
@@ -61,14 +62,17 @@ func groupDataRead(d *schema.ResourceData, meta interface{}) error {
 	var group models.Group
 
 	if objectId, ok := d.Get("object_id").(string); ok && objectId != "" {
-		g, err := client.Get(ctx, objectId)
+		g, status, err := client.Get(ctx, objectId)
 		if err != nil {
+			if status == http.StatusNotFound {
+				return fmt.Errorf("Group with ID %q was not found", objectId)
+			}
 			return fmt.Errorf("reading Group with ID %q: %+v", objectId, err)
 		}
 		group = *g
 	} else if displayName, ok := d.Get("display_name").(string); ok && displayName != "" {
 		filter := fmt.Sprintf("displayName eq '%s'", displayName)
-		groups, err := client.List(ctx, filter)
+		groups, _, err := client.List(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("identifying Group with display name %q: %+v", displayName, err)
 		}
@@ -96,13 +100,13 @@ func groupDataRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("description", v)
 	}
 
-	members, err := client.ListMembers(ctx, d.Id())
+	members, _, err := client.ListMembers(ctx, d.Id())
 	if err != nil {
 		return fmt.Errorf("unable to retrieve group members for %s: %+v", d.Id(), err)
 	}
 	d.Set("members", members)
 
-	owners, err := client.ListOwners(ctx, d.Id())
+	owners, _, err := client.ListOwners(ctx, d.Id())
 	if err != nil {
 		return fmt.Errorf("unable to retrieve group owners for %s: %+v", d.Id(), err)
 	}

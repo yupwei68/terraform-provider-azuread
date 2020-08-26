@@ -2,8 +2,9 @@ package helper
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-uuid"
 	"strings"
+
+	"github.com/hashicorp/go-uuid"
 )
 
 type ObjectSubResourceId struct {
@@ -54,4 +55,3 @@ func ObjectSubResourceIdFrom(objectId, typeId, subId string) ObjectSubResourceId
 		subId:    subId,
 	}
 }
-

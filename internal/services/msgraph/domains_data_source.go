@@ -3,10 +3,10 @@ package msgraph
 import (
 	"errors"
 	"fmt"
-	"github.com/manicminer/hamilton/models"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/manicminer/hamilton/models"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
 )
@@ -85,7 +85,7 @@ func domainsDataRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.AadClient).MsGraph.DomainsClient
 	ctx := meta.(*clients.AadClient).StopContext
 
-	result, err := client.List(ctx)
+	result, _, err := client.List(ctx)
 	if err != nil {
 		return fmt.Errorf("listing Domains: %+v", err)
 	} else if result == nil {

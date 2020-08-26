@@ -2,6 +2,7 @@ package msgraph_test
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 
@@ -157,9 +158,12 @@ func testCheckUserExists(name string) resource.TestCheckFunc {
 
 		client := acceptance.AzureADProvider.Meta().(*clients.AadClient).MsGraph.UsersClient
 		ctx := acceptance.AzureADProvider.Meta().(*clients.AadClient).StopContext
-		_, err := client.Get(ctx, rs.Primary.ID)
+		_, status, err := client.Get(ctx, rs.Primary.ID)
 
 		if err != nil {
+			if status == http.StatusNotFound {
+				return fmt.Errorf("User does not exist: %q", rs.Primary.ID)
+			}
 			return fmt.Errorf("Bad: Unable to get User %q: %+v", rs.Primary.ID, err)
 		}
 
@@ -175,10 +179,13 @@ func testCheckUserDestroy(s *terraform.State) error {
 
 		client := acceptance.AzureADProvider.Meta().(*clients.AadClient).MsGraph.UsersClient
 		ctx := acceptance.AzureADProvider.Meta().(*clients.AadClient).StopContext
-		resp, err := client.Get(ctx, rs.Primary.ID)
+		resp, status, err := client.Get(ctx, rs.Primary.ID)
 
 		if err != nil {
-			return nil
+			if status == http.StatusNotFound {
+				return nil
+			}
+			return fmt.Errorf("BAD Get request on Group %q: %+v", rs.Primary.ID, err)
 		}
 
 		return fmt.Errorf("User still exists:\n%#v", resp)

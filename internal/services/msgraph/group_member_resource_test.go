@@ -2,6 +2,7 @@ package msgraph_test
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -148,11 +149,14 @@ func testCheckGroupMemberDestroy(s *terraform.State) error {
 		memberID := rs.Primary.Attributes["member_object_id"]
 
 		// see if group exists
-		if _, err := client.Get(ctx, groupID); err != nil {
-			continue
+		if _, status, err := client.Get(ctx, groupID); err != nil {
+			if status == http.StatusNotFound {
+				continue
+			}
+			return fmt.Errorf("BAD Get request for group %q: %+v", groupID, err)
 		}
 
-		members, err := client.ListMembers(ctx, groupID)
+		members, _, err := client.ListMembers(ctx, groupID)
 		if err != nil {
 			return fmt.Errorf("retrieving Group members (groupObjectId: %q): %+v", groupID, err)
 		}

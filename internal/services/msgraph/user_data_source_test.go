@@ -78,7 +78,7 @@ func TestAccUserDataSource_byObjectIdNonexistent(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccUserDataSource_byObjectIdNonexistent(),
-				ExpectError: regexp.MustCompile("reading User with ID"),
+				ExpectError: regexp.MustCompile("User with ID \".+\" was not found"),
 			},
 		},
 	})

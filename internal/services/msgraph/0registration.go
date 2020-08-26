@@ -22,18 +22,18 @@ func (r Registration) WebsiteCategories() []string {
 func (r Registration) SupportedDataSources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
 		"azuread_domains_msgraph": DomainsData(),
-		"azuread_group_msgraph": GroupData(),
-		"azuread_groups_msgraph": GroupsData(),
-		"azuread_user_msgraph": UserData(),
-		"azuread_users_msgraph": UsersData(),
+		"azuread_group_msgraph":   GroupData(),
+		"azuread_groups_msgraph":  GroupsData(),
+		"azuread_user_msgraph":    UserData(),
+		"azuread_users_msgraph":   UsersData(),
 	}
 }
 
 // SupportedResources returns the supported Resources supported by this Service
 func (r Registration) SupportedResources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
-		"azuread_group_msgraph": GroupResource(),
+		"azuread_group_msgraph":        GroupResource(),
 		"azuread_group_member_msgraph": GroupMemberResource(),
-		"azuread_user_msgraph": UserResource(),
+		"azuread_user_msgraph":         UserResource(),
 	}
 }

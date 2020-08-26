@@ -2,9 +2,10 @@ package msgraph
 
 import (
 	"fmt"
-	"github.com/manicminer/hamilton/models"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/manicminer/hamilton/models"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
 	"github.com/terraform-providers/terraform-provider-azuread/internal/validate"
@@ -87,14 +88,17 @@ func userDataRead(d *schema.ResourceData, meta interface{}) error {
 	var user models.User
 
 	if objectId, ok := d.Get("object_id").(string); ok && objectId != "" {
-		u, err := client.Get(ctx, objectId)
+		u, status, err := client.Get(ctx, objectId)
 		if err != nil {
+			if status == http.StatusNotFound {
+				return fmt.Errorf("User with ID %q was not found", objectId)
+			}
 			return fmt.Errorf("reading User with ID %q: %+v", objectId, err)
 		}
 		user = *u
 	} else if mailNickname, ok := d.Get("mail_nickname").(string); ok && mailNickname != "" {
 		filter := fmt.Sprintf("mailNickname eq '%s'", mailNickname)
-		users, err := client.List(ctx, filter)
+		users, _, err := client.List(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("identifying User with mail nickname %q: %+v", mailNickname, err)
 		}
@@ -104,7 +108,7 @@ func userDataRead(d *schema.ResourceData, meta interface{}) error {
 		user = (*users)[0]
 	} else if upn, ok := d.Get("user_principal_name").(string); ok && upn != "" {
 		filter := fmt.Sprintf("userPrincipalName eq '%s'", upn)
-		users, err := client.List(ctx, filter)
+		users, _, err := client.List(ctx, filter)
 		if err != nil {
 			return fmt.Errorf("identifying User with user principal name %q: %+v", upn, err)
 		}
@@ -121,7 +125,6 @@ func userDataRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("account_enabled", user.AccountEnabled)
 	d.Set("display_name", user.DisplayName)
-	d.Set("immutable_id", user.OnPremisesImmutableId)
 	d.Set("mail", user.Mail)
 	d.Set("mail_nickname", user.MailNickname)
 	d.Set("object_id", user.ID)

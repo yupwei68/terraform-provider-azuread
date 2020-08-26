@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -133,11 +134,13 @@ func usersDataRead(d *schema.ResourceData, meta interface{}) error {
 	if objectIds, ok := d.Get("object_ids").([]interface{}); ok && len(objectIds) > 0 {
 		expectedCount = len(objectIds)
 		for _, v := range objectIds {
-			user, err := client.Get(ctx, v.(string))
+			user, status, err := client.Get(ctx, v.(string))
 			if err != nil {
-				// TODO: implement ignore_missing
-				if ignoreMissing {
-					continue
+				if status == http.StatusNotFound {
+					if ignoreMissing {
+						continue
+					}
+					return fmt.Errorf("User with ID %q was not found", v.(string))
 				}
 				return fmt.Errorf("finding User with ID %q: %+v", v.(string), err)
 			}
@@ -147,12 +150,8 @@ func usersDataRead(d *schema.ResourceData, meta interface{}) error {
 		expectedCount = len(mailNicknames)
 		for _, v := range mailNicknames {
 			filter := fmt.Sprintf("mailNickname eq '%s'", v.(string))
-			result, err := client.List(ctx, filter)
+			result, _, err := client.List(ctx, filter)
 			if err != nil {
-				// TODO: implement ignore_missing
-				if ignoreMissing {
-					continue
-				}
 				return fmt.Errorf("finding User with email alias %q: %+v", v.(string), err)
 			}
 			if len(*result) == 0 {
@@ -167,12 +166,8 @@ func usersDataRead(d *schema.ResourceData, meta interface{}) error {
 		expectedCount = len(upns)
 		for _, v := range upns {
 			filter := fmt.Sprintf("userPrincipalName eq '%s'", v.(string))
-			result, err := client.List(ctx, filter)
+			result, _, err := client.List(ctx, filter)
 			if err != nil {
-				// TODO: implement ignore_missing
-				if ignoreMissing {
-					continue
-				}
 				return fmt.Errorf("identifying User with user principal name %q: %+v", v.(string), err)
 			}
 			if len(*result) == 0 {

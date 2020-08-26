@@ -2,11 +2,12 @@ package msgraph
 
 import (
 	"fmt"
-	"github.com/manicminer/hamilton/models"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/manicminer/hamilton/models"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
 	"github.com/terraform-providers/terraform-provider-azuread/internal/utils"
@@ -134,7 +135,7 @@ func userResourceCreate(d *schema.ResourceData, meta interface{}) error {
 		properties.OnPremisesImmutableId = utils.StringI(v)
 	}
 
-	user, err := client.Create(ctx, properties)
+	user, _, err := client.Create(ctx, properties)
 	if err != nil {
 		return fmt.Errorf("creating User %q: %+v", upn, err)
 	}
@@ -180,7 +181,7 @@ func userResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 		user.OnPremisesImmutableId = utils.StringI(d.Get("onpremises_immutable_id"))
 	}
 
-	if err := client.Update(ctx, user); err != nil {
+	if _, err := client.Update(ctx, user); err != nil {
 		return fmt.Errorf("updating User with ID %q: %+v", d.Id(), err)
 	}
 
@@ -193,10 +194,13 @@ func userResourceRead(d *schema.ResourceData, meta interface{}) error {
 
 	objectId := d.Id()
 
-	user, err := client.Get(ctx, objectId)
+	user, status, err := client.Get(ctx, objectId)
 	if err != nil {
-		d.SetId("")
-		return nil
+		if status == http.StatusNotFound {
+			d.SetId("")
+			return nil
+		}
+		return fmt.Errorf("reading Group with ID %q: %+v", objectId, err)
 	}
 
 	d.Set("account_enabled", user.AccountEnabled)
@@ -223,7 +227,7 @@ func userResourceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.AadClient).MsGraph.UsersClient
 	ctx := meta.(*clients.AadClient).StopContext
 
-	err := client.Delete(ctx, d.Id())
+	_, err := client.Delete(ctx, d.Id())
 	if err != nil {
 		return fmt.Errorf("deleting User with ID %q: %+v", d.Id(), err)
 	}

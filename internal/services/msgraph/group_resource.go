@@ -3,12 +3,13 @@ package msgraph
 import (
 	"context"
 	"fmt"
-	clients2 "github.com/manicminer/hamilton/clients"
+	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	clients2 "github.com/manicminer/hamilton/clients"
 	"github.com/manicminer/hamilton/models"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
@@ -140,7 +141,7 @@ func groupResourceCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	group, err := client.Create(ctx, properties)
+	group, _, err := client.Create(ctx, properties)
 	if err != nil {
 		return fmt.Errorf("creating Group %q: %+v", displayName, err)
 	}
@@ -175,14 +176,14 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 		group.Description = utils.StringI(d.Get("description"))
 	}
 
-	if err := client.Update(ctx, group); err != nil {
+	if _, err := client.Update(ctx, group); err != nil {
 		return fmt.Errorf("updating Group with ID %q: %+v", d.Id(), err)
 	}
 
 	if v, ok := d.GetOkExists("members"); ok && d.HasChange("members") {
 		desiredMembers := *tf.ExpandStringSlicePtr(v.(*schema.Set).List())
 
-		members, err := client.ListMembers(ctx, *group.ID)
+		members, _, err := client.ListMembers(ctx, *group.ID)
 		if err != nil {
 			return fmt.Errorf("retrieving members for Group with ID %q: %+v", d.Id(), err)
 		}
@@ -192,7 +193,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 		membersToAdd := utils.Difference(desiredMembers, existingMembers)
 
 		if membersForRemoval != nil {
-			if err = client.RemoveMembers(ctx, d.Id(), &membersForRemoval); err != nil {
+			if _, err = client.RemoveMembers(ctx, d.Id(), &membersForRemoval); err != nil {
 				return fmt.Errorf("removing member from Group with ID %q: %+v", d.Id(), err)
 			}
 		}
@@ -202,7 +203,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 				group.AppendMember(client.BaseClient.Endpoint, client.BaseClient.ApiVersion, m)
 			}
 
-			if err := client.AddMembers(ctx, &group); err != nil {
+			if _, err := client.AddMembers(ctx, &group); err != nil {
 				return err
 			}
 		}
@@ -211,7 +212,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOkExists("owners"); ok && d.HasChange("owners") {
 		desiredOwners := *tf.ExpandStringSlicePtr(v.(*schema.Set).List())
 
-		owners, err := client.ListOwners(ctx, *group.ID)
+		owners, _, err := client.ListOwners(ctx, *group.ID)
 		if err != nil {
 			return fmt.Errorf("retrieving owners for Group with ID %q: %+v", d.Id(), err)
 		}
@@ -221,7 +222,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 		ownersToAdd := utils.Difference(desiredOwners, existingOwners)
 
 		if ownersForRemoval != nil {
-			if err = client.RemoveOwners(ctx, d.Id(), &ownersForRemoval); err != nil {
+			if _, err = client.RemoveOwners(ctx, d.Id(), &ownersForRemoval); err != nil {
 				return fmt.Errorf("removing owner from Group with ID %q: %+v", d.Id(), err)
 			}
 		}
@@ -231,7 +232,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 				group.AppendOwner(client.BaseClient.Endpoint, client.BaseClient.ApiVersion, m)
 			}
 
-			if err := client.AddOwners(ctx, &group); err != nil {
+			if _, err := client.AddOwners(ctx, &group); err != nil {
 				return err
 			}
 		}
@@ -244,8 +245,12 @@ func groupResourceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.AadClient).MsGraph.GroupsClient
 	ctx := meta.(*clients.AadClient).StopContext
 
-	group, err := client.Get(ctx, d.Id())
+	group, status, err := client.Get(ctx, d.Id())
 	if err != nil {
+		if status == http.StatusNotFound {
+			d.SetId("")
+			return nil
+		}
 		return fmt.Errorf("retrieving Group with ID %q: %+v", d.Id(), err)
 	}
 
@@ -256,14 +261,14 @@ func groupResourceRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("mail_nickname", group.MailNickname)
 	d.Set("security_enabled", group.SecurityEnabled)
 
-	owners, err := client.ListOwners(ctx, *group.ID)
+	owners, _, err := client.ListOwners(ctx, *group.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving Owners for Group with ID %q: %+v", d.Id(), err)
 	}
 
 	d.Set("owners", owners)
 
-	members, err := client.ListMembers(ctx, *group.ID)
+	members, _, err := client.ListMembers(ctx, *group.ID)
 	if err != nil {
 		return fmt.Errorf("retrieving Owners for Group with ID %q: %+v", d.Id(), err)
 	}
@@ -281,7 +286,7 @@ func groupResourceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.AadClient).MsGraph.GroupsClient
 	ctx := meta.(*clients.AadClient).StopContext
 
-	if err := client.Delete(ctx, d.Id()); err != nil {
+	if _, err := client.Delete(ctx, d.Id()); err != nil {
 		return fmt.Errorf("deleting Group with ID %q: %+v", d.Id(), err)
 	}
 
@@ -290,7 +295,7 @@ func groupResourceDelete(d *schema.ResourceData, meta interface{}) error {
 
 func groupCheckExistingDisplayName(ctx context.Context, client *clients2.GroupsClient, displayName string, existingId *string) error {
 	filter := fmt.Sprintf("displayName eq '%s'", displayName)
-	result, err := client.List(ctx, filter)
+	result, _, err := client.List(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("unable to list existing groups: %+v", err)
 	}

@@ -4,10 +4,11 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"github.com/manicminer/hamilton/models"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/manicminer/hamilton/models"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
 	"github.com/terraform-providers/terraform-provider-azuread/internal/validate"
@@ -59,7 +60,7 @@ func groupsDataRead(d *schema.ResourceData, meta interface{}) error {
 		for _, v := range displayNames {
 			displayName := v.(string)
 			filter := fmt.Sprintf("displayName eq '%s'", displayName)
-			result, err := client.List(ctx, filter)
+			result, _, err := client.List(ctx, filter)
 			if err != nil {
 				return fmt.Errorf("finding Group with display name %q: %+v", displayName, err)
 			}
@@ -77,8 +78,11 @@ func groupsDataRead(d *schema.ResourceData, meta interface{}) error {
 		expectedCount = len(objectIds)
 		for _, v := range objectIds {
 			objectId := v.(string)
-			group, err := client.Get(ctx, objectId)
+			group, status, err := client.Get(ctx, objectId)
 			if err != nil {
+				if status == http.StatusNotFound {
+					return fmt.Errorf("Group with ID %q was not found", objectId)
+				}
 				return fmt.Errorf("reading Group with ID %q: %+v", objectId, err)
 			}
 

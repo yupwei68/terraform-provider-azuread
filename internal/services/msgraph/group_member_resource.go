@@ -2,11 +2,12 @@ package msgraph
 
 import (
 	"fmt"
-	"github.com/terraform-providers/terraform-provider-azuread/internal/services/msgraph/helper"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
+	"github.com/terraform-providers/terraform-provider-azuread/internal/services/msgraph/helper"
 	"github.com/terraform-providers/terraform-provider-azuread/internal/tf"
 	"github.com/terraform-providers/terraform-provider-azuread/internal/validate"
 )
@@ -51,14 +52,17 @@ func groupMemberResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	tf.LockByName(groupMemberResourceName, groupID)
 	defer tf.UnlockByName(groupMemberResourceName, groupID)
 
-	group, err := client.Get(ctx, groupID)
+	group, status, err := client.Get(ctx, groupID)
 	if err != nil {
+		if status == http.StatusNotFound {
+			return fmt.Errorf("Group with ID %q was not found", groupID)
+		}
 		return fmt.Errorf("could not retrieve group details for %q: %+v", groupID, err)
 	}
 
 	group.AppendMember(client.BaseClient.Endpoint, client.BaseClient.ApiVersion, memberID)
 
-	if err := client.AddMembers(ctx, group); err != nil {
+	if _, err := client.AddMembers(ctx, group); err != nil {
 		return fmt.Errorf("adding member %q to group %q: %+v", memberID, groupID, err)
 	}
 
@@ -76,7 +80,7 @@ func groupMemberResourceRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("unable to parse ID: %v", err)
 	}
 
-	members, err := client.ListMembers(ctx, id.GroupId)
+	members, _, err := client.ListMembers(ctx, id.GroupId)
 	if err != nil {
 		return fmt.Errorf("retrieving Group members (group object ID: %q): %+v", id.GroupId, err)
 	}
@@ -111,7 +115,7 @@ func groupMemberResourceDelete(d *schema.ResourceData, meta interface{}) error {
 	tf.LockByName(groupMemberResourceName, id.GroupId)
 	defer tf.UnlockByName(groupMemberResourceName, id.GroupId)
 
-	if err := client.RemoveMembers(ctx, id.GroupId, &[]string{id.MemberId}); err != nil {
+	if _, err := client.RemoveMembers(ctx, id.GroupId, &[]string{id.MemberId}); err != nil {
 		return fmt.Errorf("removing Member (member object ID: %q) from Group (group object ID: %q): %+v", id.MemberId, id.GroupId, err)
 	}
 

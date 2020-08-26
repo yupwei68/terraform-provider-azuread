@@ -2,6 +2,7 @@ package msgraph_test
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -241,8 +242,8 @@ func TestAccGroup_preventDuplicateNames(t *testing.T) {
 	ri := tf.AccRandTimeInt()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:  func() { acceptance.PreCheck(t) },
-		Providers: acceptance.SupportedProviders,
+		PreCheck:     func() { acceptance.PreCheck(t) },
+		Providers:    acceptance.SupportedProviders,
 		CheckDestroy: testCheckGroupDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -262,9 +263,12 @@ func testCheckGroupExists(name string) resource.TestCheckFunc {
 
 		client := acceptance.AzureADProvider.Meta().(*clients.AadClient).MsGraph.GroupsClient
 		ctx := acceptance.AzureADProvider.Meta().(*clients.AadClient).StopContext
-		_, err := client.Get(ctx, rs.Primary.ID)
+		_, status, err := client.Get(ctx, rs.Primary.ID)
 
 		if err != nil {
+			if status == http.StatusNotFound {
+				return fmt.Errorf("Group does not exist: %q", rs.Primary.ID)
+			}
 			return fmt.Errorf("Bad: Could not Get Group: %+v", err)
 		}
 
@@ -280,10 +284,13 @@ func testCheckGroupDestroy(s *terraform.State) error {
 
 		client := acceptance.AzureADProvider.Meta().(*clients.AadClient).MsGraph.GroupsClient
 		ctx := acceptance.AzureADProvider.Meta().(*clients.AadClient).StopContext
-		resp, err := client.Get(ctx, rs.Primary.ID)
+		resp, status, err := client.Get(ctx, rs.Primary.ID)
 
 		if err != nil {
-			return nil
+			if status == http.StatusNotFound {
+				return nil
+			}
+			return fmt.Errorf("BAD Get request on Group %q: %+v", rs.Primary.ID, err)
 		}
 
 		return fmt.Errorf("Group still exists:\n%#v", resp)
@@ -320,8 +327,8 @@ func testAccGroup_complete(id int, password string) string {
 resource "azuread_group_msgraph" "test" {
   display_name = "acctestGroup-%d"
   description  = "Please delete me as this is a.test.AD group!"
-  members      = [azuread_user.test.object_id]
-  owners       = [azuread_user.test.object_id]
+  members      = [azuread_user_msgraph.test.object_id]
+  owners       = [azuread_user_msgraph.test.object_id]
 }
 `, testAccUser_basic(id, password), id)
 }
@@ -344,7 +351,7 @@ resource "azuread_group_msgraph" "member" {
   display_name = "acctestGroup-%[1]d-Member"
 }
 
-resource "azuread_user" "test" {
+resource "azuread_user_msgraph" "test" {
   user_principal_name = "acctestUser.%[1]d@${data.azuread_domains.tenant_domain.domains.0.domain_name}"
   display_name        = "acctestUser-%[1]d"
   password            = "%[2]s"
@@ -358,7 +365,7 @@ func testAccGroupWithDiverseMembers(id int, password string) string {
 
 resource "azuread_group_msgraph" "test" {
   display_name = "acctestGroup-%[2]d"
-  members      = [azuread_user.test.object_id, azuread_group_msgraph.member.object_id, azuread_service_principal.test.object_id]
+  members      = [azuread_user_msgraph.test.object_id, azuread_group_msgraph.member.object_id, azuread_service_principal.test.object_id]
 }
 `, testAccDiverseDirectoryObjects(id, password), id)
 }
@@ -369,7 +376,7 @@ func testAccGroupWithDiverseOwners(id int, password string) string {
 
 resource "azuread_group_msgraph" "test" {
   display_name = "acctestGroup-%[2]d"
-  owners       = [azuread_user.test.object_id, azuread_service_principal.test.object_id]
+  owners       = [azuread_user_msgraph.test.object_id, azuread_service_principal.test.object_id]
 }
 `, testAccDiverseDirectoryObjects(id, password), id)
 }
@@ -380,7 +387,7 @@ func testAccGroupWithOneMember(id int, password string) string {
 
 resource "azuread_group_msgraph" "test" {
   display_name = "acctestGroup-%[2]d"
-  members      = [azuread_user.test.object_id]
+  members      = [azuread_user_msgraph.test.object_id]
 }
 `, testAccUser_basic(id, password), id)
 }
@@ -391,7 +398,7 @@ func testAccGroupWithOneOwners(id int, password string) string {
 
 resource "azuread_group_msgraph" "test" {
   display_name = "acctestGroup-%[2]d"
-  owners       = [azuread_user.test.object_id]
+  owners       = [azuread_user_msgraph.test.object_id]
 }
 `, testAccUser_basic(id, password), id)
 }
@@ -402,7 +409,7 @@ func testAccGroupWithThreeMembers(id int, password string) string {
 
 resource "azuread_group_msgraph" "test" {
   display_name = "acctestGroup-%[2]d"
-  members      = [azuread_user.testA.object_id, azuread_user.testB.object_id, azuread_user.testC.object_id]
+  members      = [azuread_user_msgraph.testA.object_id, azuread_user_msgraph.testB.object_id, azuread_user_msgraph.testC.object_id]
 }
 `, testAccUser_threeUsersABC(id, password), id)
 }
@@ -413,7 +420,7 @@ func testAccGroupWithThreeOwners(id int, password string) string {
 
 resource "azuread_group_msgraph" "test" {
   display_name = "acctestGroup-%[2]d"
-  owners       = [azuread_user.testA.object_id, azuread_user.testB.object_id, azuread_user.testC.object_id]
+  owners       = [azuread_user_msgraph.testA.object_id, azuread_user_msgraph.testB.object_id, azuread_user_msgraph.testC.object_id]
 }
 `, testAccUser_threeUsersABC(id, password), id)
 }
@@ -424,8 +431,8 @@ func testAccGroupWithOwnersAndMembers(id int, password string) string {
 
 resource "azuread_group_msgraph" "test" {
   display_name = "acctestGroup-%[2]d"
-  owners       = [azuread_user.testA.object_id]
-  members      = [azuread_user.testB.object_id, azuread_user.testC.object_id]
+  owners       = [azuread_user_msgraph.testA.object_id]
+  members      = [azuread_user_msgraph.testB.object_id, azuread_user_msgraph.testC.object_id]
 }
 `, testAccUser_threeUsersABC(id, password), id)
 }
