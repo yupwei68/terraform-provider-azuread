@@ -9,18 +9,22 @@ import (
 )
 
 func URLIsHTTPS(i interface{}, k string) (_ []string, errors []error) {
-	return URLWithScheme([]string{"https"})(i, k)
+	return URLWithScheme([]string{"https"}, false)(i, k)
 }
 
 func URLIsHTTPOrHTTPS(i interface{}, k string) (_ []string, errors []error) {
-	return URLWithScheme([]string{"http", "https"})(i, k)
+	return URLWithScheme([]string{"http", "https"}, false)(i, k)
+}
+
+func URLIsHTTPOrHTTPSorEmpty(i interface{}, k string) (_ []string, errors []error) {
+	return URLWithScheme([]string{"http", "https"}, true)(i, k)
 }
 
 func URLIsAppURI(i interface{}, k string) (_ []string, errors []error) {
-	return URLWithScheme([]string{"http", "https", "api", "urn", "ms-appx"})(i, k)
+	return URLWithScheme([]string{"http", "https", "api", "urn", "ms-appx"}, false)(i, k)
 }
 
-func URLWithScheme(validSchemes []string) schema.SchemaValidateFunc {
+func URLWithScheme(validSchemes []string, allowEmpty bool) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (_ []string, errors []error) {
 		v, ok := i.(string)
 		if !ok {
@@ -29,6 +33,9 @@ func URLWithScheme(validSchemes []string) schema.SchemaValidateFunc {
 		}
 
 		if v == "" {
+			if allowEmpty {
+				return
+			}
 			errors = append(errors, fmt.Errorf("expected %q url to not be empty", k))
 			return
 		}

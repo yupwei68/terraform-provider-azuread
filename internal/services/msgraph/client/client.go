@@ -6,15 +6,17 @@ import (
 )
 
 type Client struct {
-	DomainsClient *clients.DomainsClient
-	GroupsClient  *clients.GroupsClient
-	UsersClient   *clients.UsersClient
+	ApplicationsClient *clients.ApplicationsClient
+	DomainsClient      *clients.DomainsClient
+	GroupsClient       *clients.GroupsClient
+	UsersClient        *clients.UsersClient
 }
 
 func BuildClient(authorizer auth.Authorizer, tenantId string) *Client {
 	return &Client{
-		DomainsClient: clients.NewDomainsClient(authorizer, tenantId),
-		GroupsClient:  clients.NewGroupsClient(authorizer, tenantId),
-		UsersClient:   clients.NewUsersClient(authorizer, tenantId),
+		ApplicationsClient: clients.NewApplicationsClient(authorizer, tenantId),
+		DomainsClient:      clients.NewDomainsClient(authorizer, tenantId),
+		GroupsClient:       clients.NewGroupsClient(authorizer, tenantId),
+		UsersClient:        clients.NewUsersClient(authorizer, tenantId),
 	}
 }

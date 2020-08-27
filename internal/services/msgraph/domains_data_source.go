@@ -135,7 +135,7 @@ func flattenDomains(d *schema.ResourceData, input *[]models.Domain) []interface{
 	onlyInitial := d.Get("only_initial").(bool)
 	onlyRoot := d.Get("only_root").(bool)
 
-	domains := make([]interface{}, 0)
+	domains := make([]interface{}, 0, len(*input))
 
 	for _, v := range *input {
 		authenticationType := ""

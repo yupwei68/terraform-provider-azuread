@@ -32,6 +32,7 @@ func (r Registration) SupportedDataSources() map[string]*schema.Resource {
 // SupportedResources returns the supported Resources supported by this Service
 func (r Registration) SupportedResources() map[string]*schema.Resource {
 	return map[string]*schema.Resource{
+		"azuread_application_msgraph":  ApplicationResource(),
 		"azuread_group_msgraph":        GroupResource(),
 		"azuread_group_member_msgraph": GroupMemberResource(),
 		"azuread_user_msgraph":         UserResource(),
