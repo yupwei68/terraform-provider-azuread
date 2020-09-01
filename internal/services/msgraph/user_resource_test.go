@@ -215,14 +215,14 @@ data "azuread_domains" "tenant_domain" {
 }
 
 resource "azuread_user_msgraph" "test" {
-  user_principal_name       = "acctestUser.%[1]d@${data.azuread_domains.tenant_domain.domains.0.domain_name}"
-  display_name              = "acctestUser-%[1]d-Updated"
-  mail_nickname             = "acctestUser-%[1]d-Updated"
-  account_enabled           = false
-  password                  = "%[2]s"
-  force_password_change     = true
-  usage_location            = "NO"
-  onpremises_immutable_id   = "%[1]d"
+  user_principal_name     = "acctestUser.%[1]d@${data.azuread_domains.tenant_domain.domains.0.domain_name}"
+  display_name            = "acctestUser-%[1]d-Updated"
+  mail_nickname           = "acctestUser-%[1]d-Updated"
+  account_enabled         = false
+  password                = "%[2]s"
+  force_password_change   = true
+  usage_location          = "NO"
+  onpremises_immutable_id = "%[1]d"
 }
 `, id, password)
 }

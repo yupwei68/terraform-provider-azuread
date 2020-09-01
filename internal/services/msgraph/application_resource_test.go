@@ -427,13 +427,13 @@ resource "azuread_application_msgraph" "test" {
   display_name            = "acctest-APP-%[1]d"
   identifier_uris         = []
   group_membership_claims = "None"
-  owners = []
+  owners                  = []
 
   //api {
   //  //oauth2_permission_scope = []
   //}
 
-  optional_claims = []
+  optional_claims          = []
   required_resource_access = []
 
   web {
@@ -448,7 +448,7 @@ resource "azuread_application_msgraph" "test" {
 func testAccApplication_withGroupMembershipClaimsDirectoryRole(ri int) string {
 	return fmt.Sprintf(`
 resource "azuread_application_msgraph" "test" {
-  display_name                    = "acctest-APP-%[1]d"
+  display_name            = "acctest-APP-%[1]d"
   group_membership_claims = "DirectoryRole"
 }
 `, ri)
@@ -457,7 +457,7 @@ resource "azuread_application_msgraph" "test" {
 func testAccApplication_withGroupMembershipClaimsSecurityGroup(ri int) string {
 	return fmt.Sprintf(`
 resource "azuread_application_msgraph" "test" {
-  display_name                    = "acctest-APP-%[1]d"
+  display_name            = "acctest-APP-%[1]d"
   group_membership_claims = "SecurityGroup"
 }
 `, ri)
@@ -466,7 +466,7 @@ resource "azuread_application_msgraph" "test" {
 func testAccApplication_withGroupMembershipClaimsApplicationGroup(ri int) string {
 	return fmt.Sprintf(`
 resource "azuread_application_msgraph" "test" {
-  display_name                    = "acctest-APP-%[1]d"
+  display_name            = "acctest-APP-%[1]d"
   group_membership_claims = "ApplicationGroup"
 }
 `, ri)
@@ -477,10 +477,10 @@ func testAccApplication_complete(ri int, pw string) string {
 %[1]s
 
 resource "azuread_application_msgraph" "test" {
-  display_name    = "acctest-APP-%[2]d"
-  identifier_uris = ["api://%[2]d"]
+  display_name            = "acctest-APP-%[2]d"
+  identifier_uris         = ["api://%[2]d"]
   group_membership_claims = "All"
-  owners = [azuread_user_msgraph.test.object_id]
+  owners                  = [azuread_user_msgraph.test.object_id]
 
   api {
     oauth2_permission_scope {
@@ -616,7 +616,7 @@ resource "azuread_application_msgraph" "test" {
 func testAccApplication_oauth2PermissionsEmpty(ri int) string {
 	return fmt.Sprintf(`
 resource "azuread_application_msgraph" "test" {
-  display_name               = "acctest-APP-%[1]d"
+  display_name       = "acctest-APP-%[1]d"
   oauth2_permissions = []
 }
 `, ri)
@@ -626,7 +626,7 @@ func testAccApplication_native(ri int) string {
 	return fmt.Sprintf(`
 resource "azuread_application_msgraph" "test" {
   display_name = "acctest-APP-%[1]d"
-  type = "native"
+  type         = "native"
 }
 `, ri)
 }
@@ -634,9 +634,9 @@ resource "azuread_application_msgraph" "test" {
 func testAccApplication_nativeReplyUrls(ri int) string {
 	return fmt.Sprintf(`
 resource "azuread_application_msgraph" "test" {
-  display_name       = "acctest-APP-%[1]d"
-  type       = "native"
-  reply_urls = ["urn:ietf:wg:oauth:2.0:oob"]
+  display_name = "acctest-APP-%[1]d"
+  type         = "native"
+  reply_urls   = ["urn:ietf:wg:oauth:2.0:oob"]
 }
 `, ri)
 }

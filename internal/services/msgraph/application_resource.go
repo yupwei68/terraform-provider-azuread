@@ -3,14 +3,14 @@ package msgraph
 import (
 	"context"
 	"fmt"
-	clients2 "github.com/manicminer/hamilton/clients"
-	"github.com/manicminer/hamilton/models"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	clients2 "github.com/manicminer/hamilton/clients"
+	"github.com/manicminer/hamilton/models"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
 	"github.com/terraform-providers/terraform-provider-azuread/internal/tf"
@@ -49,10 +49,10 @@ func ApplicationResource() *schema.Resource {
 			},
 
 			"api": {
-				Type:       schema.TypeList,
-				Optional:   true,
-				Computed:   true,
-				MaxItems:   1,
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
 				//ConfigMode: schema.SchemaConfigModeAttr,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -71,8 +71,8 @@ func ApplicationResource() *schema.Resource {
 						},
 
 						"oauth2_permission_scope": {
-							Type:       schema.TypeSet,
-							Optional:   true,
+							Type:     schema.TypeSet,
+							Optional: true,
 							//Computed:   true,
 							//ConfigMode: schema.SchemaConfigModeAttr,
 							Elem: &schema.Resource{
