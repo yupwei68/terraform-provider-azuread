@@ -383,7 +383,7 @@ func applicationResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if v, ok := d.GetOk("group_membership_claims"); ok {
-		properties.GroupMembershipClaims = utils.StringI(v)
+		properties.GroupMembershipClaims = utils.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("identifier_uris"); ok {
@@ -403,7 +403,7 @@ func applicationResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if v, ok := d.GetOk("sign_in_audience"); ok {
-		properties.SignInAudience = utils.StringI(v)
+		properties.SignInAudience = utils.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("web"); ok {
@@ -460,7 +460,7 @@ func applicationResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if v, ok := d.GetOkExists("group_membership_claims"); ok && d.HasChange("group_membership_claims") {
-		app.GroupMembershipClaims = utils.StringI(v)
+		app.GroupMembershipClaims = utils.String(v.(string))
 	}
 
 	if v, ok := d.GetOkExists("identifier_uris"); ok && d.HasChange("identifier_uris") {
@@ -480,7 +480,7 @@ func applicationResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if v, ok := d.GetOkExists("sign_in_audience"); ok && d.HasChange("sign_in_audience") {
-		app.SignInAudience = utils.StringI(v)
+		app.SignInAudience = utils.String(v.(string))
 	}
 
 	if v, ok := d.GetOkExists("web"); ok && d.HasChange("web") {

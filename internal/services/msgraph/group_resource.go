@@ -124,7 +124,7 @@ func groupResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if v, ok := d.GetOk("description"); ok {
-		properties.Description = utils.StringI(v)
+		properties.Description = utils.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("members"); ok {
@@ -173,7 +173,7 @@ func groupResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if d.HasChange("description") {
-		group.Description = utils.StringI(d.Get("description"))
+		group.Description = utils.String(d.Get("description").(string))
 	}
 
 	if _, err := client.Update(ctx, group); err != nil {

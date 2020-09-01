@@ -117,22 +117,22 @@ func userResourceCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	properties := models.User{
-		AccountEnabled: utils.BoolI(d.Get("account_enabled")),
-		DisplayName:    utils.StringI(d.Get("display_name")),
+		AccountEnabled: utils.Bool(d.Get("account_enabled").(bool)),
+		DisplayName:    utils.String(d.Get("display_name").(string)),
 		MailNickname:   &mailNickName,
 		PasswordProfile: &models.UserPasswordProfile{
-			ForceChangePasswordNextSignIn: utils.BoolI(d.Get("force_password_change")),
-			Password:                      utils.StringI(d.Get("password")),
+			ForceChangePasswordNextSignIn: utils.Bool(d.Get("force_password_change").(bool)),
+			Password:                      utils.String(d.Get("password").(string)),
 		},
 		UserPrincipalName: &upn,
 	}
 
 	if v, ok := d.GetOk("usage_location"); ok {
-		properties.UsageLocation = utils.StringI(v)
+		properties.UsageLocation = utils.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("onpremises_immutable_id"); ok {
-		properties.OnPremisesImmutableId = utils.StringI(v)
+		properties.OnPremisesImmutableId = utils.String(v.(string))
 	}
 
 	user, _, err := client.Create(ctx, properties)
@@ -155,30 +155,30 @@ func userResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	user := models.User{ID: utils.String(d.Id())}
 
 	if d.HasChange("display_name") {
-		user.DisplayName = utils.StringI(d.Get("display_name"))
+		user.DisplayName = utils.String(d.Get("display_name").(string))
 	}
 
 	if d.HasChange("mail_nickname") {
-		user.MailNickname = utils.StringI(d.Get("mail_nickname"))
+		user.MailNickname = utils.String(d.Get("mail_nickname").(string))
 	}
 
 	if d.HasChange("account_enabled") {
-		user.AccountEnabled = utils.BoolI(d.Get("account_enabled"))
+		user.AccountEnabled = utils.Bool(d.Get("account_enabled").(bool))
 	}
 
 	if d.HasChange("password") || d.HasChange("force_password_change") {
 		user.PasswordProfile = &models.UserPasswordProfile{
-			ForceChangePasswordNextSignIn: utils.BoolI(d.Get("force_password_change")),
-			Password:                      utils.StringI(d.Get("password")),
+			ForceChangePasswordNextSignIn: utils.Bool(d.Get("force_password_change").(bool)),
+			Password:                      utils.String(d.Get("password").(string)),
 		}
 	}
 
 	if d.HasChange("usage_location") {
-		user.UsageLocation = utils.StringI(d.Get("usage_location"))
+		user.UsageLocation = utils.String(d.Get("usage_location").(string))
 	}
 
 	if d.HasChange("onpremises_immutable_id") {
-		user.OnPremisesImmutableId = utils.StringI(d.Get("onpremises_immutable_id"))
+		user.OnPremisesImmutableId = utils.String(d.Get("onpremises_immutable_id").(string))
 	}
 
 	if _, err := client.Update(ctx, user); err != nil {

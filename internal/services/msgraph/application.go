@@ -115,13 +115,13 @@ func expandApplicationOAuth2Permissions(i interface{}) *[]models.ApplicationApiP
 
 		result = append(result, models.ApplicationApiPermissionScope{
 			ID:                      utils.String(uuid.New().String()),
-			AdminConsentDescription: utils.StringI(scope["admin_consent_description"]),
-			AdminConsentDisplayName: utils.StringI(scope["admin_consent_display_name"]),
-			IsEnabled:               utils.BoolI(scope["is_enabled"]),
-			Type:                    utils.StringI(scope["type"]),
-			UserConsentDescription:  utils.StringI(scope["user_consent_description"]),
-			UserConsentDisplayName:  utils.StringI(scope["user_consent_display_name"]),
-			Value:                   utils.StringI(scope["value"]),
+			AdminConsentDescription: utils.String(scope["admin_consent_description"].(string)),
+			AdminConsentDisplayName: utils.String(scope["admin_consent_display_name"].(string)),
+			IsEnabled:               utils.Bool(scope["is_enabled"].(bool)),
+			Type:                    utils.String(scope["type"].(string)),
+			UserConsentDescription:  utils.String(scope["user_consent_description"].(string)),
+			UserConsentDisplayName:  utils.String(scope["user_consent_display_name"].(string)),
+			Value:                   utils.String(scope["value"].(string)),
 		})
 	}
 	return &result
