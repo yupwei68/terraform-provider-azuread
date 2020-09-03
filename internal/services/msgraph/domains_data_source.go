@@ -3,8 +3,6 @@ package msgraph
 import (
 	"errors"
 	"fmt"
-	"strconv"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/manicminer/hamilton/models"
 
@@ -118,8 +116,11 @@ func domainsDataId(d *schema.ResourceData, meta interface{}) (id string) {
 	tenantId := meta.(*clients.AadClient).TenantID
 	id = fmt.Sprintf("domains-%s-", tenantId)
 	for i, v := range a {
+		i++
 		if d.Get(v).(bool) {
-			id = id + strconv.Itoa(i)
+			id = fmt.Sprintf("%s%d", id, i)
+		} else {
+			id = fmt.Sprintf("%s0", id)
 		}
 	}
 	return id
