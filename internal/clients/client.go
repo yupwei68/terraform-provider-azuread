@@ -26,4 +26,6 @@ type AadClient struct {
 	// Azure AD clients
 	AadGraph *aad.Client
 	MsGraph  *ms.Client
+
+	UseMsGraph bool
 }

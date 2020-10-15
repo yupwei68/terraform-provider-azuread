@@ -16,7 +16,7 @@ import (
 
 func groupsData() *schema.Resource {
 	return &schema.Resource{
-		Read: groupsDataRead,
+		Read: GroupsDataRead,
 
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -48,7 +48,7 @@ func groupsData() *schema.Resource {
 	}
 }
 
-func groupsDataRead(d *schema.ResourceData, meta interface{}) error {
+func GroupsDataRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.AadClient).AadGraph.GroupsClient
 	ctx := meta.(*clients.AadClient).StopContext
 

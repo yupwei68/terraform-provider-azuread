@@ -2,60 +2,27 @@ package msgraph
 
 import (
 	"fmt"
+	"github.com/terraform-providers/terraform-provider-azuread/internal/services/shim"
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/manicminer/hamilton/models"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
-	"github.com/terraform-providers/terraform-provider-azuread/internal/validate"
 )
 
 func GroupData() *schema.Resource {
 	return &schema.Resource{
-		Read: groupDataRead,
+		Read: GroupDataRead,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
-			"object_id": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validate.UUID,
-				ExactlyOneOf: []string{"display_name", "object_id"},
-			},
-
-			"description": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
-			"display_name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validate.NoEmptyStrings,
-				ExactlyOneOf: []string{"display_name", "object_id"},
-			},
-
-			"members": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-
-			"owners": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-		},
+		Schema: shim.GroupDataSchema(),
 	}
 }
 
-func groupDataRead(d *schema.ResourceData, meta interface{}) error {
+func GroupDataRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*clients.AadClient).MsGraph.GroupsClient
 	ctx := meta.(*clients.AadClient).StopContext
 
