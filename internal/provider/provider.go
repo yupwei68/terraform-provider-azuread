@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/terraform-providers/terraform-provider-azuread/internal/clients"
-	"github.com/terraform-providers/terraform-provider-azuread/internal/services/aadgraph"
 )
 
 // Microsoft’s Terraform Partner ID is this specific GUID
@@ -47,15 +46,9 @@ func AzureADProvider() *schema.Provider {
 		log.Printf(f, v...)
 	}
 
-	// only one for now so keeping it simple, eventually we will need a way to differentiate between aadgraph and msgraph?
-	// looks like only an env var will work?
-	services := []ServiceRegistration{
-		aadgraph.Registration{},
-	}
-
 	dataSources := make(map[string]*schema.Resource)
 	resources := make(map[string]*schema.Resource)
-	for _, service := range services {
+	for _, service := range SupportedServices() {
 		debugLog("[DEBUG] Registering Resources for %q..", service.Name())
 		for k, v := range service.SupportedResources() {
 			if existing := resources[k]; existing != nil {
@@ -200,7 +193,7 @@ func providerConfigure(p *schema.Provider) schema.ConfigureContextFunc {
 	}
 }
 
-func buildClient(ctx context.Context, p *schema.Provider, b *authentication.Builder, partnerId string) (*clients.AadClient, diag.Diagnostics) {
+func buildClient(ctx context.Context, p *schema.Provider, b *authentication.Builder, partnerId string) (*clients.Client, diag.Diagnostics) {
 	config, err := b.Build()
 	if err != nil {
 		return nil, diag.Diagnostics{diag.Diagnostic{
